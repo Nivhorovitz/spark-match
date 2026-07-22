@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Spark Match | Sales Coaching Community</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="logo_green.png" alt="Sparkco logo" />
+        <div><strong>Spark Match</strong><span>Sales Coaching Space</span></div>
+      </div>
+      <nav>
+        <button class="nav-item active" data-view="profile">My Profile</button>
+        <button class="nav-item" data-view="matches">Matches</button>
+        <button class="nav-item" data-view="saved">Saved</button>
+        <button class="nav-item" data-view="invites">Invites</button>
+        <button class="nav-item" data-view="rooms">Practice Rooms</button>
+        <button class="nav-item" data-view="admin">Coach Dashboard</button>
+      </nav>
+      <div class="side-note">
+        <p class="eyebrow">How it works</p>
+        <p>Tell the community what you are working on, what you can help with, and what kind of sales conversation you want to practice.</p>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Peer-to-peer growth engine</p>
+          <h1>Spark Match for sales practice</h1>
+          <p class="subtitle">Help members find the right practice partner, accountability buddy, role-play partner, or sales mentor inside the community.</p>
+        </div>
+        <div class="top-actions">
+          <span id="dbStatus" class="status-pill">Connecting...</span>
+          <button class="ghost" id="copyBio">Copy community bio</button>
+          <button class="primary" id="saveAll">Save</button>
+        </div>
+      </header>
+
+      <section class="hero-card">
+        <div><h2>From content consumption to active sales practice</h2><p>Members do not just watch training. They meet, practice, exchange feedback, and build confidence through focused peer sessions.</p></div>
+        <div class="hero-metrics"><div><strong id="profileCompleteness">0%</strong><span>profile signal</span></div><div><strong id="matchCount">0</strong><span>possible matches</span></div><div><strong id="savedCount">0</strong><span>saved people</span></div></div>
+      </section>
+
+      <section class="view active" id="view-profile">
+        <div class="grid two">
+          <div class="card">
+            <p class="eyebrow">Identity</p><h2>Your sales profile</h2>
+            <label>Full name<input id="name" placeholder="Alex Morgan" /></label>
+            <label>Role / business stage<input id="title" placeholder="Sales coach, founder, SDR, closer, consultant..." /></label>
+            <label>Short intro<textarea id="bio" rows="3" placeholder="What do you sell, who do you help, and what are you currently trying to improve?"></textarea></label>
+            <div class="photo-row"><div class="avatar-preview" id="photoPreview">SM</div><div><label class="file-label">Upload profile photo<input type="file" id="photoInput" accept="image/*" /></label><p class="hint">Your photo will be saved to your profile and shown to community members.</p></div></div>
+          </div>
+          <div class="card public-card">
+            <p class="eyebrow">Preview</p><h2>How members will see you</h2>
+            <div class="person-card large"><div class="avatar-preview small" id="publicPhoto">SM</div><div><h3 id="publicName">Your name</h3><p id="publicTitle">Your role / stage</p></div></div>
+            <p id="publicBio" class="bio-preview">Your short intro will appear here.</p><div class="tag-cloud" id="publicTags"></div>
+          </div>
+        </div>
+
+        <div class="grid two">
+          <div class="card"><p class="eyebrow">I can help with</p><h2>What I bring</h2><div class="tag-cloud selectable" id="offersTags"></div><div class="custom-tag"><input id="customOffer" placeholder="Add your own skill or offer" /><button class="ghost" id="addOffer">Add</button></div></div>
+          <div class="card"><p class="eyebrow">I want help with</p><h2>What I need</h2><div class="tag-cloud selectable" id="needsTags"></div><div class="custom-tag"><input id="customNeed" placeholder="Add your own challenge or need" /><button class="ghost" id="addNeed">Add</button></div></div>
+        </div>
+
+        <div class="grid two">
+          <div class="card"><p class="eyebrow">Current focus</p><h2>What are you working on now?</h2><textarea id="currentFocus" rows="4" placeholder="Example: I am trying to improve discovery calls and convert more consultations into paid clients."></textarea></div>
+          <div class="card"><p class="eyebrow">Spark Match offer</p><h2>I can host a session on...</h2><textarea id="braindateOffer" rows="4" placeholder="Example: I can run a 30-minute role-play on handling price objections or closing without sounding pushy."></textarea></div>
+        </div>
+
+        <details class="advanced" open>
+          <summary>Optional details that improve matching</summary>
+          <div class="grid two">
+            <label>Ideal match<textarea id="idealMatch" rows="3" placeholder="I would like to meet someone who is working on..."></textarea></label>
+            <label>Preferred format<select id="meetingStyle"><option value="">Choose one</option><option>Quick 15-minute exchange</option><option>30-minute role-play</option><option>Accountability check-in</option><option>Hot seat feedback session</option><option>Deep-dive coaching conversation</option></select></label>
+            <label>Availability<input id="availability" placeholder="Tuesdays, Thursdays, after 4pm..." /></label>
+            <label>Openness<select id="openness"><option value="">Choose one</option><option>Open to anyone in the community</option><option>Prefer similar business stage</option><option>Prefer a more experienced peer</option><option>Prefer helping beginners</option></select></label>
+            <label>Email, optional<input id="email" placeholder="name@example.com" /></label>
+            <label>Phone / WhatsApp, optional<input id="phone" placeholder="+1..." /></label>
+          </div>
+          <div class="bottom-save-card"><div><p class="eyebrow">Ready?</p><h3>Finished updating your profile?</h3><p>You can save from here. Your profile will update in the community database.</p></div><button class="primary bottom-save-btn" id="saveBottom" type="button">Save profile</button></div>
+        </details>
+      </section>
+
+      <section class="view" id="view-matches"><div class="section-head"><div><p class="eyebrow">Recommended people</p><h2>Your Spark Matches</h2><p>Matches are based on skills, needs, current focus, offers, and preferred practice format.</p></div><button class="ghost" id="refreshMatches">Refresh matches</button></div><div class="cards-list" id="matchesList"></div></section>
+      <section class="view" id="view-saved"><div class="section-head"><div><p class="eyebrow">Relationship pipeline</p><h2>Saved connections</h2><p>Keep track of people you want to meet, follow up with, or practice with again.</p></div></div><div class="cards-list" id="savedList"></div></section>
+      <section class="view" id="view-invites"><div class="section-head"><div><p class="eyebrow">Outreach</p><h2>Invites</h2><p>Create lightweight invitations for practice sessions and follow-up conversations.</p></div></div><div class="grid two"><div class="card"><h3>Create an invite</h3><label>Invite title<input id="inviteTitle" placeholder="Discovery call role-play" /></label><label>Message<textarea id="inviteMessage" rows="4" placeholder="Would you like to practice together this week?"></textarea></label><label>Suggested times<input id="inviteTimes" placeholder="Tue 11am, Thu 4pm..." /></label><button class="primary" id="createInvite">Create invite</button></div><div class="card"><h3>Recent invites</h3><div id="invitesList" class="mini-list"></div></div></div></section>
+      <section class="view" id="view-rooms"><div class="section-head"><div><p class="eyebrow">Community design</p><h2>Suggested practice rooms</h2><p>Rooms are generated from member needs and offers. They help the coach turn community signals into recurring activity.</p></div></div><div class="cards-list" id="roomsList"></div></section>
+      <section class="view" id="view-admin"><div class="section-head"><div><p class="eyebrow">Coach dashboard</p><h2>Community signals</h2><p>Understand what members need, what they can offer, and which practice formats should become weekly rituals.</p></div></div><div class="grid three"><button class="report-tab active" data-report="needs">Top needs</button><button class="report-tab" data-report="offers">Top strengths</button><button class="report-tab" data-report="gaps">Opportunity gaps</button></div><div class="card" id="adminReport"></div></section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
