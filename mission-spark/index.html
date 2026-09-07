@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#080912">
+  <title>Mission Spark · The Zone</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="mark">Z</span><div><strong>THE ZONE</strong><small>MISSION SPARK · v0.1</small></div></div>
+      <button id="teacherToggle" class="quiet" type="button" aria-pressed="false">מאחורי הקלעים למורה</button>
+    </header>
+
+    <section id="studentFlow" class="stage">
+      <div id="stepInterest" class="screen active">
+        <p class="kicker">לא מתחילים במה צריך ללמוד</p>
+        <h1>מה מעניין אתכם?</h1>
+        <p class="lead">משהו שמסקרן, מעצבן, מרגש או שפשוט בא לכם להתעסק בו.</p>
+        <div id="interestCloud" class="interest-cloud"></div>
+        <label class="field hero-field"><span>או לכתוב משהו אחר</span><input id="customInterest" autocomplete="off" placeholder="למשל: סניקרס, כלבים, קסמים, אנימה..."></label>
+        <button id="interestNext" class="primary" type="button" disabled>זה מעניין אותנו</button>
+      </div>
+
+      <div id="stepDesire" class="screen">
+        <button class="back" data-back="stepInterest" type="button">→ חזרה</button>
+        <p class="kicker">עניין נבחר · <span id="interestEcho"></span></p>
+        <h1>מה בא לכם לגרום לקרות?</h1>
+        <p class="lead">לא עבודה על הנושא. משהו שאנשים אחרים יוכלו לחוות, לשחק, להשתמש או להגיב אליו.</p>
+        <div id="desireCards" class="desire-grid"></div>
+        <label class="field"><span>משפט משלכם, אם כבר יש רעיון</span><textarea id="customDesire" rows="2" placeholder="בא לנו לגרום ל..."></textarea></label>
+        <button id="generate" class="primary" type="button" disabled>תנו לנו משימות</button>
+      </div>
+
+      <div id="stepMissions" class="screen">
+        <button class="back" data-back="stepDesire" type="button">→ לדייק את הכיוון</button>
+        <p class="kicker">שלוש אפשרויות · אין תשובה נכונה</p>
+        <h1>איזו משימה עושה לכם חשק?</h1>
+        <div id="missionGrid" class="mission-grid"></div>
+      </div>
+
+      <div id="stepMission" class="screen">
+        <button class="back" data-back="stepMissions" type="button">→ לראות שוב את האפשרויות</button>
+        <div id="missionHero" class="mission-hero"></div>
+        <div class="mission-body">
+          <section class="brief-card">
+            <p class="kicker">המשימה שלכם</p>
+            <h2>מה עושים עכשיו?</h2>
+            <div id="firstMoves" class="moves"></div>
+          </section>
+          <section class="need-card">
+            <p class="kicker">הדבר הבא שחסר</p>
+            <h2>מה צריך לגלות כדי להתקדם?</h2>
+            <div id="needToKnow" class="need-list"></div>
+            <button id="learnedSomething" class="secondary" type="button">גילינו משהו · להמשיך</button>
+          </section>
+        </div>
+        <section id="reflection" class="reflection hidden">
+          <p class="kicker">עצירה קצרה</p>
+          <h2>מה השתנה מאז שהתחלנו?</h2>
+          <div class="reflection-grid"><label>מה עבד?<textarea rows="2"></textarea></label><label>מה הפתיע?<textarea rows="2"></textarea></label><label>מה ננסה אחרת?<textarea rows="2"></textarea></label></div>
+        </section>
+      </div>
+    </section>
+
+    <aside id="teacherPanel" class="teacher-panel" aria-hidden="true">
+      <div class="teacher-head"><div><p class="kicker">ORCHESTRATOR VIEW</p><h2>החיבור הפדגוגי</h2></div><button id="teacherClose" class="icon" aria-label="סגירה">×</button></div>
+      <p class="teacher-note">השכבה הזאת לא משנה את המשימה. היא עוזרת לזהות איפה ידע אמיתי הופך למשאב שהקבוצה צריכה.</p>
+      <div class="teacher-form">
+        <label>מקצוע<input id="subject" placeholder="למשל: היסטוריה"></label>
+        <label>יחידה / תוכן<input id="unit" placeholder="למשל: המהפכה הצרפתית"></label>
+        <label>מטרות למידה<textarea id="goals" rows="2" placeholder="סיבה ותוצאה, קבוצות ואינטרסים..."></textarea></label>
+        <label>אילוצים<textarea id="constraints" rows="2" placeholder="4 מפגשים, קבוצות של 5, חומר חובה..."></textarea></label>
+        <button id="mapLearning" class="teacher-action" type="button">למפות בלי להפוך למטלה</button>
+      </div>
+      <div id="pedagogyMap" class="pedagogy-map empty-state">אחרי שתיבחר משימה, תופיע כאן המפה הסמויה שלה.</div>
+    </aside>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

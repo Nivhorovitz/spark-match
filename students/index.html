@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Spark Match | The Zone</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="spatial-shell">
+    <header class="top">
+      <div class="brand">
+        <img src="../logo_green.png" onerror="this.style.display='none'"/>
+        <div>
+          <small>THE ZONE · גולדה</small>
+          <b>Spark Match</b>
+        </div>
+      </div>
+
+      <nav>
+        <button class="nav active" data-view="find">למצוא חיבור</button>
+        <button class="nav" data-view="matches">ההתאמות שלי</button>
+        <button class="nav" data-view="saved">שמורות</button>
+        <button class="nav secondary" data-view="profile">פרופיל</button>
+      </nav>
+
+      <span class="versionchip">STUDENT v1.0</span>
+      <button class="top-demo demo-only hidden" id="seedDemoProfilesTop">יצירת פרופילי דמו</button>
+      <span id="dbStatus" class="status">מתחבר...</span>
+    </header>
+
+    <main>
+      <section id="view-find" class="view active">
+        <div id="welcome" class="welcome">
+          <div>
+            <p class="eyebrow">לגלות · להתחבר · ליצור</p>
+            <h1>למצוא את החיבור הנכון למה שרוצים לגרום לקרות.</h1>
+            <p class="lead">בוחרים איזה חיבור יעזור עכשיו, מקבלים התאמה רלוונטית, וממשיכים יחד לעשייה בתוך המרחב.</p>
+            <p class="privacy-note">גרסת ניסוי: משתמשים רק בשם פרטי או בכינוי. לא מזינים פרטי קשר או מידע אישי.</p>
+            <div class="actions">
+              <button class="primary big" id="start">למצוא התאמה</button>
+              <button class="soft big" id="goMatches">לראות התאמות</button>
+              <button class="soft big demo-only hidden" id="seedDemoProfiles">יצירת פרופילי דמו</button>
+            </div>
+          </div>
+
+          <div class="visual">
+            <div class="core">Spark<br>Match</div>
+            <span class="badge b1">לבנות יחד</span>
+            <span class="badge b2">ללמוד ממישהו</span>
+            <span class="badge b3">להתקדם יחד</span>
+          </div>
+        </div>
+
+        <div id="choose" class="panel hidden">
+          <div class="head">
+            <p class="eyebrow">שלב 1 מתוך 3</p>
+            <h2>איזה חיבור יעזור לך היום?</h2>
+            <p>בוחרים מסלול אחד. השלב הבא קצר וממוקד.</p>
+          </div>
+
+          <div class="choices">
+            <article data-type="practice">
+              <i>🎭</i>
+              <h3>לבנות יחד</h3>
+              <p>למצוא מישהו או מישהי עם עניין משותף ולהפוך רעיון לדבר שקורה באמת.</p>
+              <button>למצוא שותפות</button>
+            </article>
+
+            <article data-type="accountability">
+              <i>✓</i>
+              <h3>להתקדם יחד</h3>
+              <p>למצוא חיבור שיעזור לשמור על קצב, להתגבר על תקיעות ולהגיע לצעד הבא.</p>
+              <button>למצוא חיבור</button>
+            </article>
+
+            <article data-type="mentor">
+              <i>✦</i>
+              <h3>ללמוד ממישהו</h3>
+              <p>למצוא מישהו או מישהי שכבר יודעים משהו שחסר למשימה ויכולים לעזור להתקדם.</p>
+              <button>למצוא ידע</button>
+            </article>
+          </div>
+        </div>
+
+        <div id="questions" class="panel hidden">
+          <div class="head compact">
+            <p class="eyebrow">שלב 2 מתוך 3</p>
+            <h2 id="questionTitle">כמה שאלות קצרות</h2>
+            <p>שתי דקות מספיקות. התשובות יעזרו לנו למצוא חיבור שימושי.</p>
+          </div>
+
+          <div class="formcard">
+            <div class="formgrid">
+              <label>איך לקרוא לכם?<input id="quickName" placeholder="שם פרטי או כינוי מספיק"></label>
+              <label>מועדון / תחום עניין<input id="quickTitle" placeholder="גיימינג, אופנה, חלל, מוזיקה, סביבה..."></label>
+              <label class="wide">מה רוצים לגרום לקרות?<textarea id="quickGoal" rows="2" placeholder="לדוגמה: לבנות משחק שאי אפשר לנצח בו בלי שיתוף פעולה."></textarea></label>
+              <label class="wide">מה חסר כרגע כדי להתקדם?<textarea id="quickNeed" rows="2" placeholder="לדוגמה: רעיון, עיצוב, ידע, משוב, תכנון, מישהו לבנות איתו..."></textarea></label>
+              <label class="wide">במה אפשר לעזור לאחרים?<input id="quickOffer" placeholder="לדוגמה: ציור, קוד, כתיבה, צילום, מחקר, ארגון..."></label>
+            </div>
+
+            <div id="quickTags" class="tags"></div>
+
+            <div class="stepactions">
+              <button class="soft" id="back">חזרה</button>
+              <button class="primary" id="find">להציג התאמות</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="results" class="panel hidden">
+          <div class="head compact">
+            <p class="eyebrow">שלב 3 מתוך 3</p>
+            <h2>חיבורים שיכולים לעזור</h2>
+            <p>בוחרים עם מי לדבר, שולחים הזמנה, או שומרים להמשך.</p>
+          </div>
+
+          <div id="resultsList" class="matchgrid"></div>
+
+          <div class="stepactions center">
+            <button class="soft" id="again">להתחיל מחדש</button>
+            <button class="primary" id="saveQuick">שמירת הפרופיל</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-matches" class="view">
+        <div class="panel">
+          <div class="head compact">
+            <p class="eyebrow">ההתאמות שלי</p>
+            <h2>אנשים שכדאי להכיר</h2>
+            <p>מבוסס על תחומי עניין, צרכים ויכולות במרחב.</p>
+          </div>
+          <div id="allMatchesList" class="matchgrid"></div>
+        </div>
+      </section>
+
+      <section id="view-saved" class="view">
+        <div class="panel">
+          <div class="head compact">
+            <p class="eyebrow">שמורות</p>
+            <h2>רשימת החיבורים שלך</h2>
+            <p>חיבורים שנשמרו לבנייה משותפת, עזרה או המשך היכרות.</p>
+          </div>
+          <div id="savedList" class="savedlist"></div>
+        </div>
+      </section>
+
+      <section id="view-profile" class="view">
+        <div class="panel profile">
+          <div class="head compact">
+            <p class="eyebrow">פרופיל</p>
+            <h2>עדכון פרופיל Spark Match</h2>
+            <p>הפרופיל עוזר לנו להציע התאמות מדויקות יותר.</p>
+          </div>
+
+          <div class="formgrid">
+            <label>שם<input id="profileName"></label>
+            <label>מועדון / תחום עניין<input id="profileTitle"></label>
+            <label class="wide">משפט אישי קצר<textarea id="profileBio" rows="2"></textarea></label>
+            <label class="wide">מה רוצים לגרום לקרות?<textarea id="profileGoal" rows="2"></textarea></label>
+            <label class="wide">אפשר לעזור ב...<input id="profileOffer"></label>
+            <label class="wide">צריך עזרה ב...<input id="profileNeed"></label>
+            <label class="hidden">אימייל<input id="profileEmail"></label>
+            <label class="hidden">טלפון<input id="profilePhone"></label>
+          </div>
+
+          <div class="stepactions">
+            <button class="primary" id="saveFull">שמירת פרופיל</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-admin" class="view">
+        <div class="panel">
+          <div class="head compact">
+            <p class="eyebrow">מבט צוות חינוכי</p>
+            <h2>אותות מהשכבה</h2>
+            <p>מוסתר מהניווט הראשי. אפשר לפתוח עם <code>?admin=true</code>.</p>
+          </div>
+          <div id="adminSignals" class="signals"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="meetingModal" role="dialog" aria-modal="true">
+    <div class="meeting-modal">
+      <button class="modal-close" id="closeMeetingModal" aria-label="Close">×</button>
+      <p class="eyebrow">תיאום Spark Match</p>
+      <h2 id="meetingPersonName">שליחת הזמנה</h2>
+      <p class="modal-lead">מציעים כמה זמנים ונפגשים בתוך המרחב סביב שולחן Spark Match.</p>
+
+      <div class="meeting-location">
+        <strong>מקום המפגש</strong>
+        <span>בתוך החדר · שולחן Spark Match</span>
+      </div>
+
+      <label>
+        הודעה
+        <textarea id="meetingMessage" rows="3">רוצה להיפגש כדי לחשוב, ללמוד או לבנות משהו יחד?</textarea>
+      </label>
+
+      <div class="time-grid">
+        <label>אפשרות 1<input id="meetingTime1" placeholder="שלישי 11:00"></label>
+        <label>אפשרות 2<input id="meetingTime2" placeholder="חמישי 16:00"></label>
+        <label>אפשרות 3<input id="meetingTime3" placeholder="שישי 10:30"></label>
+      </div>
+
+      <div class="step-actions">
+        <button class="soft" id="meetNowBtn">להיפגש עכשיו בחדר</button>
+        <button class="primary" id="sendScheduledInvite">שליחת הזמנה</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
