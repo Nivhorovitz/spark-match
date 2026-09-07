@@ -88,3 +88,166 @@ input,textarea,select{direction:rtl;text-align:right}
 @keyframes zoneFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(1deg)}}
 .visual .core{animation:zoneFloat 5.5s ease-in-out infinite}
 @media (prefers-reduced-motion:reduce){.visual .core{animation:none}.primary,.soft,.nav,.choices article{transition:none}}
+
+/* Sparkco palette + layout polish */
+:root{
+  --cream:#0d0f16;
+  --warm:#07080d;
+  --paper:#12151f;
+  --rose:#bcbfff;
+  --roseSoft:rgba(188,191,255,.16);
+  --burg:#dfff68;
+  --burgDark:#f7f7ee;
+  --burgundy:#dfff68;
+  --burgundy-dark:#f7f7ee;
+  --gold:#dfff68;
+  --goldSoft:rgba(223,255,104,.16);
+  --ink:#f7f7ee;
+  --muted:#aaadbb;
+  --line:rgba(223,255,104,.18);
+  --shadow:0 24px 70px rgba(0,0,0,.34)
+}
+.spatial-shell{
+  background:
+    radial-gradient(circle at 14% 18%,rgba(188,191,255,.20),transparent 31%),
+    radial-gradient(circle at 88% 16%,rgba(223,255,104,.13),transparent 28%),
+    linear-gradient(135deg,var(--cream),var(--warm));
+  border-color:rgba(223,255,104,.22)
+}
+.brand b,h1,h2,h3,label,.section strong{color:var(--ink)}
+.brand small,.eyebrow{color:var(--gold)}
+nav,.status,.versionchip{
+  background:rgba(18,21,31,.82);
+  border-color:rgba(223,255,104,.18);
+  box-shadow:0 10px 28px rgba(0,0,0,.18)
+}
+.welcome,.panel{background:rgba(12,14,21,.88);border-color:rgba(223,255,104,.20)}
+.welcome>div:first-child{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.lead{margin-top:20px}
+.privacy-note{
+  display:block;
+  max-width:690px;
+  margin:16px 0 0;
+  padding:10px 14px;
+  background:rgba(18,21,31,.82);
+  border-color:rgba(188,191,255,.20)
+}
+.actions{margin-top:26px}
+.primary,.nav.active,.tag.selected{
+  color:#090b0e;
+  background:var(--burg);
+  box-shadow:0 14px 32px rgba(223,255,104,.15)
+}
+.soft,.choices button,.badge{color:var(--ink);background:#171a25;border-color:rgba(188,191,255,.22)}
+.choices article,.formcard,.match,.signal,.empty{
+  background:#141721;
+  border-color:rgba(188,191,255,.18);
+  box-shadow:0 16px 45px rgba(0,0,0,.20)
+}
+.choices i,.why,.tag{background:var(--roseSoft)}
+input,textarea{color:var(--ink);background:#0a0c12;border-color:rgba(188,191,255,.22)}
+input:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 4px rgba(223,255,104,.12)}
+.avatar{background:linear-gradient(145deg,var(--roseSoft),var(--goldSoft))}
+
+/* Connection animation: orbiting signals converge around the shared spark. */
+.visual{isolation:isolate}
+.visual::before,.visual::after{
+  content:"";
+  position:absolute;
+  width:300px;
+  height:300px;
+  border-radius:50%;
+  pointer-events:none
+}
+.visual::before{
+  border:1px dashed rgba(188,191,255,.48);
+  box-shadow:inset 0 0 42px rgba(188,191,255,.06);
+  animation:sparkOrbit 15s linear infinite
+}
+.visual::after{
+  width:328px;
+  height:328px;
+  background:
+    radial-gradient(circle at 50% 0,var(--burg) 0 5px,transparent 6px),
+    radial-gradient(circle at 100% 54%,var(--rose) 0 5px,transparent 6px),
+    radial-gradient(circle at 18% 88%,var(--burg) 0 5px,transparent 6px);
+  filter:drop-shadow(0 0 9px rgba(223,255,104,.52));
+  animation:sparkOrbit 10s linear infinite reverse
+}
+.visual .core{
+  position:relative;
+  z-index:2;
+  color:var(--ink);
+  background:linear-gradient(145deg,#1b1e2a,#08090d);
+  border:1px solid rgba(223,255,104,.52);
+  box-shadow:0 0 0 10px rgba(223,255,104,.05),0 30px 70px rgba(0,0,0,.44);
+  animation:sparkConnect 4.8s ease-in-out infinite
+}
+.badge{
+  z-index:3;
+  box-shadow:0 14px 36px rgba(0,0,0,.28);
+  animation:signalGlow 3.6s ease-in-out infinite
+}
+.b2{animation-delay:-1.2s}.b3{animation-delay:-2.4s}
+@keyframes sparkOrbit{to{transform:rotate(360deg)}}
+@keyframes sparkConnect{
+  0%,100%{transform:translateY(0);box-shadow:0 0 0 10px rgba(223,255,104,.04),0 30px 70px rgba(0,0,0,.44)}
+  50%{transform:translateY(-7px);box-shadow:0 0 0 18px rgba(223,255,104,.08),0 34px 82px rgba(0,0,0,.52)}
+}
+@keyframes signalGlow{
+  0%,100%{border-color:rgba(188,191,255,.22);box-shadow:0 14px 36px rgba(0,0,0,.28)}
+  50%{border-color:rgba(223,255,104,.62);box-shadow:0 14px 38px rgba(223,255,104,.12)}
+}
+
+/* Keep the meeting dialog clear at every supported viewport. */
+.modal-backdrop{padding:clamp(12px,2.5vw,28px)}
+.meeting-modal{
+  width:min(720px,calc(100vw - 24px));
+  max-height:calc(100vh - 24px);
+  overflow:auto;
+  padding:34px;
+  color:var(--ink);
+  background:#11141d;
+  border-color:rgba(223,255,104,.28)
+}
+.meeting-modal .eyebrow,.meeting-modal h2{padding-inline-end:64px}
+.modal-close{
+  top:16px;
+  left:16px;
+  right:auto;
+  color:var(--ink);
+  background:#1a1d28;
+  border-color:rgba(188,191,255,.28);
+  z-index:2
+}
+.meeting-location,.meeting-copy,.meeting-slot{background:#151823;border-color:rgba(188,191,255,.20)}
+.meeting-location{color:var(--ink)}
+.step-actions{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:12px;
+  margin-top:20px;
+  flex-wrap:wrap
+}
+@media (max-height:760px) and (min-width:981px){
+  .welcome{padding:26px 40px}
+  h1{font-size:clamp(38px,4.2vw,60px);line-height:.98}
+  .lead{margin-top:15px;font-size:20px}
+  .privacy-note{margin-top:11px;padding:8px 12px}
+  .actions{margin-top:18px}
+  .visual{min-height:300px}
+  .core{width:184px;height:184px;font-size:31px}
+  .visual::before{width:264px;height:264px}
+  .visual::after{width:286px;height:286px}
+}
+@media (max-width:600px){
+  .meeting-modal{padding:72px 20px 24px}
+  .meeting-modal .eyebrow,.meeting-modal h2{padding-inline-end:0}
+  .meeting-modal h2{font-size:34px}
+  .step-actions{flex-direction:column;align-items:stretch}
+  .step-actions button{width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  .visual::before,.visual::after,.visual .core,.badge{animation:none}
+}
