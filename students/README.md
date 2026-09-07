@@ -14,11 +14,15 @@
 
 הפרופיל אינו מבקש תמונה, אימייל או טלפון. שם פרטי או כינוי מספיקים.
 
+## חדרים נפרדים
+
+הפרמטר `room` מפריד בין קבוצות. לדוגמה: `?room=golda-pilot` או `?room=golda-8a`.
+
 ## כתובות
 
-- רגיל: `.../students/`
-- דמו: `.../students/?demo=true`
-- צוות חינוכי: `.../students/?admin=true`
+- רגיל: `.../students/?room=golda-pilot`
+- דמו: `.../students/?room=golda-pilot&demo=true`
+- צוות חינוכי: `.../students/?room=golda-pilot&admin=true`
 
 ## אבטחה
 
