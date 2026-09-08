@@ -10,7 +10,7 @@
 <body>
   <main class="shell">
     <header class="topbar">
-      <div class="brand"><span class="mark">Z</span><div><strong>THE ZONE</strong><small>MISSION SPARK · v0.1.1</small></div></div>
+      <div class="brand"><span class="mark">Z</span><div><strong>THE ZONE</strong><small>MISSION SPARK · v0.2</small></div></div>
       <button id="teacherToggle" class="quiet" type="button" aria-pressed="false">מאחורי הקלעים למורה</button>
     </header>
 
@@ -54,13 +54,80 @@
             <p class="kicker">הדבר הבא שחסר</p>
             <h2>מה צריך לגלות כדי להתקדם?</h2>
             <div id="needToKnow" class="need-list"></div>
-            <button id="learnedSomething" class="secondary" type="button">גילינו משהו · להמשיך</button>
+            <button id="startInvestigation" class="secondary" type="button">בואו נבדוק את זה</button>
           </section>
         </div>
-        <section id="reflection" class="reflection hidden">
-          <p class="kicker">עצירה קצרה</p>
-          <h2>מה השתנה מאז שהתחלנו?</h2>
-          <div class="reflection-grid"><label>מה עבד?<textarea rows="2"></textarea></label><label>מה הפתיע?<textarea rows="2"></textarea></label><label>מה ננסה אחרת?<textarea rows="2"></textarea></label></div>
+        <section id="investigationLoop" class="investigation-loop hidden" aria-live="polite">
+          <div class="loop-head">
+            <div><p class="kicker">לופ חקירה · בדיקה · יישום</p><h2>חושבים רגע, יוצאים לבדוק וחוזרים עם ראיות</h2></div>
+            <span id="loopProgress" class="loop-progress">1 מתוך 5</span>
+          </div>
+
+          <div id="loopAssumption" class="loop-step active">
+            <p class="step-label">שלב 1 · הנחה</p>
+            <h3>מה אנחנו מניחים כרגע?</h3>
+            <p class="loop-copy">כתבו דבר אחד שאתם חושבים שהוא נכון, אבל עדיין לא בדקתם.</p>
+            <div id="assumptionPrompts" class="prompt-chips"></div>
+            <label class="field"><span>ההנחה שלנו</span><textarea id="assumptionInput" rows="2" placeholder="אנחנו חושבים ש..."></textarea></label>
+            <button id="assumptionNext" class="primary loop-next" data-loop-next="loopQuestion" type="button" disabled>להפוך את זה לשאלה</button>
+          </div>
+
+          <div id="loopQuestion" class="loop-step">
+            <p class="step-label">שלב 2 · שאלה מנחה</p>
+            <h3>מה צריך לגלות כדי לדעת?</h3>
+            <p class="loop-copy">שאלה טובה אינה שואלת מה דעתכם, אלא מחפשת משהו שאפשר לראות, לשמוע או למדוד.</p>
+            <div id="questionPrompts" class="prompt-chips"></div>
+            <label class="field"><span>השאלה שנבדוק</span><textarea id="questionInput" rows="2" placeholder="איך נדע אם..."></textarea></label>
+            <button id="questionNext" class="primary loop-next" data-loop-next="loopMethod" type="button" disabled>לבחור דרך בדיקה</button>
+          </div>
+
+          <div id="loopMethod" class="loop-step">
+            <p class="step-label">שלב 3 · תכנון בדיקה</p>
+            <h3>איך נבדוק את זה בעולם?</h3>
+            <p class="loop-copy">בחרו בדיקה קטנה שאפשר לבצע באמת. לא צריך מחקר ענק כדי ללמוד משהו חשוב.</p>
+            <div id="methodCards" class="method-cards"></div>
+            <div class="test-grid">
+              <label class="field"><span>ממי או ממה נאסוף מידע?</span><input id="testAudience" placeholder="למשל: 5 תלמידים שלא מכירים את הרעיון"></label>
+              <label class="field"><span>מה ייחשב ראיה?</span><input id="testEvidence" placeholder="משהו שנוכל לראות, לשמוע או לספור"></label>
+            </div>
+            <button id="launchTest" class="primary" type="button">יש לנו בדיקה · יוצאים לפעולה</button>
+          </div>
+
+          <div id="loopAction" class="loop-step action-step">
+            <p class="step-label">שלב 4 · פעולה בעולם</p>
+            <div class="action-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
+            <h3>צאו לבדוק. האפליקציה מחכה כאן.</h3>
+            <div id="testSummary" class="test-summary"></div>
+            <p class="loop-copy">בצעו את הבדיקה, תעדו מה קרה באמת וחזרו גם אם התוצאה לא הייתה מה שקיוויתם.</p>
+            <button id="returnWithEvidence" class="secondary" type="button">חזרנו עם ראיות</button>
+          </div>
+
+          <div id="loopEvidence" class="loop-step">
+            <p class="step-label">שלב 5 · ראיות והמהלך הבא</p>
+            <h3>מה קרה באמת?</h3>
+            <div class="evidence-grid">
+              <label class="field"><span>מה ראינו, שמענו או מדדנו?</span><textarea id="evidenceInput" rows="3" placeholder="הראיות שאספנו..."></textarea></label>
+              <label class="field"><span>מה הפתיע אותנו?</span><textarea id="surpriseInput" rows="3" placeholder="לא ציפינו ש..."></textarea></label>
+            </div>
+            <fieldset class="assumption-result">
+              <legend>מה קרה להנחה שלנו?</legend>
+              <label><input type="radio" name="assumptionResult" value="התחזקה"> התחזקה</label>
+              <label><input type="radio" name="assumptionResult" value="נחלשה"> נחלשה</label>
+              <label><input type="radio" name="assumptionResult" value="השתנתה"> השתנתה</label>
+            </fieldset>
+            <label class="field"><span>מה ננסה עכשיו?</span><textarea id="nextMoveInput" rows="2" placeholder="המהלך הבא שלנו הוא..."></textarea></label>
+            <div class="loop-actions">
+              <button id="restartLoop" class="primary" type="button">מתחילים סיבוב נוסף</button>
+              <button id="pauseLoop" class="quiet" type="button" disabled>סיימנו לעכשיו</button>
+            </div>
+          </div>
+
+          <div id="loopPaused" class="loop-step paused-step">
+            <p class="kicker">הסיבוב הושלם</p>
+            <h3>המשימה נשארת שלכם</h3>
+            <p class="loop-copy">כשתרצו לבדוק את ההנחה הבאה, חזרו לכאן והתחילו סיבוב נוסף.</p>
+            <button id="resumeLoop" class="secondary" type="button">להתחיל סיבוב חדש</button>
+          </div>
         </section>
       </div>
     </section>
