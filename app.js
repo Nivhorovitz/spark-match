@@ -100,12 +100,10 @@ async function dbLoad(){
   if(!supabaseClient){ setStatus('Supabase לא נטען', 'error'); return; }
   setStatus('Connecting...', '');
   try{
-    let { data: communities, error: commErr } = await supabaseClient.from('communities').select('*').eq('name','Sparkco Spark Match').order('created_at', { ascending:true }).limit(1);
+    let { data: communities, error: commErr } = await supabaseClient.from('communities').select('*').eq('name','Spark Match Sales Coaching').order('created_at', { ascending:true }).limit(1);
     if(commErr) throw commErr;
     if(!communities || !communities.length){
-      const res = await supabaseClient.from('communities').insert({name:'Sparkco Spark Match', description:'Default community for Spark Match'}).select().single();
-      if(res.error) throw res.error;
-      communities = [res.data];
+      throw new Error('Spark Match Sales Coaching community missing. Administrator setup required.');
     }
     state.communityId = communities[0].id;
     state.communityName = communities[0].name || state.communityName;
