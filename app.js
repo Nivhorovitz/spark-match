@@ -7,11 +7,11 @@ const SUPABASE_KEY = 'sb_publishable_tk18F8g4AS7oQF9eV9qGQw_nONj_xiX';
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 const defaults = {
-  offers:['מיתוג','בידול','AI','בניית קהילה','שיווק','מכירות','תמחור','ניהול מוצר','כתיבה','עיצוב','הנחיית קבוצות','גיוס כספים','חינוך','ליווי אישי'],
-  needs:['פידבק על רעיון','דיוק הצעת ערך','שימוש ב-AI','תמחור','חיבור לשותפים','שיווק אורגני','בניית קהילה בתשלום','תמיכה טכנולוגית','מנטורינג קצר','השראה','לקוחות ראשונים'],
-  availability:['בוקר','צהריים','אחר הצהריים','ערב','ראשון','שני','שלישי','רביעי','חמישי'],
-  meetingStyles:['שיחת היכרות קצרה','פידבק ממוקד','חשיבה משותפת','מנטורינג קצר','שיחת עומק','קבוצה קטנה'],
-  openness:['פתוח/ה לפניות','רק התאמות מדויקות','פנוי/ה לשיחה אחת השבוע','מעדיף/ה קבוצה קטנה','כרגע רק מתבונן/ת']
+  offers: DEFAULT_SALES_TAXONOMY.offers,
+  needs: DEFAULT_SALES_TAXONOMY.needs,
+  availability: [],
+  meetingStyles: ['Quick 15-minute exchange','30-minute role-play','Accountability check-in','Hot seat feedback session','Deep-dive coaching conversation'],
+  openness: ['Open to anyone in the community','Prefer similar business stage','Prefer a more experienced peer','Prefer helping beginners']
 };
 
 function getOrCreateUserKey(){
@@ -33,10 +33,12 @@ let state = JSON.parse(localStorage.getItem('sparkMatchSalesV1') || 'null') || {
   people:[],
   savedConnections:[],
   invites:[],
-  activeReport:'overview',
+  activeReport:'needs',
   online:false
 };
 state.userKey = state.userKey || getOrCreateUserKey();
+state.me={name:'',title:'',bio:'',photo:'',offers:[],needs:[],availability:[],meetingStyles:[],openness:[],currentFocus:'',braindateOffer:'',lookingToMeet:'',email:'',phone:'',...state.me};
+state.taxonomy={...defaults,...state.taxonomy};
 
 let selectedInvitePerson = null;
 const $ = id => document.getElementById(id);
@@ -66,11 +68,12 @@ function saveLocal(){
     }catch(e){}
   }
 }
+function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function unique(arr){ return [...new Set((arr || []).filter(Boolean))]; }
 function initials(name){ return (name || '?').split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('') || '?'; }
 function toggle(arr,val){ const i=arr.indexOf(val); i>=0 ? arr.splice(i,1) : arr.push(val); }
 function profileAsPerson(){ return {...state.me, id:state.myProfileId || 'me', user_key:state.userKey}; }
-function setStatus(text, mode=''){ const el=$('connectionStatus'); if(!el) return; el.textContent=text; el.className='connection-pill' + (mode ? ' ' + mode : ''); }
+function setStatus(text, mode=''){ const el=$('dbStatus'); if(!el) return; el.textContent=text; el.className='connection-pill' + (mode ? ' ' + mode : ''); }
 
 function dbProfileToUi(p){
   return {
@@ -174,47 +177,56 @@ async function saveProfileToDb(){
 
 function chip(label, selected, onClick){ const b=document.createElement('button'); b.type='button'; b.className='chip'+(selected?' selected':''); b.textContent=label; b.onclick=onClick; return b; }
 function renderChipSet(el,taxonomyKey,userKey){ const target=$(el); if(!target) return; target.innerHTML=''; state.taxonomy[taxonomyKey].forEach(t=>target.appendChild(chip(t,(state.me[userKey]||[]).includes(t),()=>{ if(!state.me[userKey]) state.me[userKey]=[]; toggle(state.me[userKey],t); render(); }))); }
-function renderChips(){ renderChipSet('offersChips','offers','offers'); renderChipSet('needsChips','needs','needs'); renderChipSet('availabilityChips','availability','availability'); renderChipSet('meetingStyleChips','meetingStyles','meetingStyles'); renderChipSet('opennessChips','openness','openness'); }
+function renderChips(){ renderChipSet('offersTags','offers','offers'); renderChipSet('needsTags','needs','needs'); }
 function syncForm(){
-  ['name','title','bio','currentFocus','braindateOffer','lookingToMeet','link','location','email','phone'].forEach(k=>{ if($(k)) $(k).value=state.me[k]||''; });
-  if($('communityName')) $('communityName').value=state.communityName;
-  if($('adminOffers')) $('adminOffers').value=state.taxonomy.offers.join(', ');
-  if($('adminNeeds')) $('adminNeeds').value=state.taxonomy.needs.join(', ');
+  ['name','title','bio','currentFocus','braindateOffer','email','phone'].forEach(k=>{if($(k))$(k).value=state.me[k]||'';});
+  if($('idealMatch'))$('idealMatch').value=state.me.lookingToMeet||'';
+  if($('meetingStyle'))$('meetingStyle').value=(state.me.meetingStyles||[])[0]||'';
+  if($('openness'))$('openness').value=(state.me.openness||[])[0]||'';
+  if($('availability'))$('availability').value=(state.me.availability||[]).join(', ');
 }
-function profileCompletion(){ const fields=[!!state.me.name,!!state.me.title,!!state.me.bio,!!state.me.photo,state.me.offers.length>0,state.me.needs.length>0,!!state.me.currentFocus,!!state.me.braindateOffer,!!state.me.lookingToMeet,state.me.availability.length>0,state.me.meetingStyles.length>0,state.me.openness.length>0]; return Math.round(fields.filter(Boolean).length/fields.length*100); }
+function profileCompletion(){
+  const fields=[!!state.me.name,!!state.me.title,!!state.me.bio,!!state.me.photo,(state.me.offers||[]).length>0,(state.me.needs||[]).length>0,!!state.me.currentFocus,!!state.me.braindateOffer,(state.me.availability||[]).length>0,(state.me.meetingStyles||[]).length>0];
+  return Math.round(fields.filter(Boolean).length/fields.length*100);
+}
+
 function setPhoto(el, photo, fallback){ const node=$(el); if(!node) return; if(photo){ node.style.backgroundImage=`url(${photo})`; node.textContent=''; } else { node.style.backgroundImage=''; node.textContent=fallback; } }
 function updatePreview(){
-  if($('previewName')) $('previewName').textContent=state.me.name||'השם שלך';
-  if($('previewTitle')) $('previewTitle').textContent=state.me.title||'התפקיד שלך';
-  if($('previewBio')) $('previewBio').textContent=state.me.bio||'המשפט האישי שלך יופיע כאן.';
-  if($('completionScore')) $('completionScore').textContent=profileCompletion()+'%';
+  if($('publicName'))$('publicName').textContent=state.me.name||'Your name';
+  if($('publicTitle'))$('publicTitle').textContent=state.me.title||'Your role';
+  if($('publicBio'))$('publicBio').textContent=state.me.bio||'Your intro will appear here.';
+  if($('profileCompleteness'))$('profileCompleteness').textContent=profileCompletion()+'%';
   const fallback=initials(state.me.name);
   setPhoto('photoPreview',state.me.photo,fallback);
   setPhoto('publicPhoto',state.me.photo,fallback);
-  const tags=unique([...state.me.offers,...state.me.needs,...state.me.meetingStyles]).slice(0,8);
-  if($('previewTags')) $('previewTags').innerHTML=tags.map(t=>`<span class="tag">${t}</span>`).join('');
+  const tags=unique([...(state.me.offers||[]),...(state.me.needs||[]),...(state.me.meetingStyles||[])]).slice(0,8);
+  if($('publicTags'))$('publicTags').innerHTML=tags.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('');
 }
 
 function calcMatches(){
   const me=state.me;
+  const norm=a=>[...new Set((Array.isArray(a)?a:[]).map(x=>String(x??'').trim().toLowerCase()).filter(Boolean))];
+  const overlap=(a,b)=>{const have=new Set(norm(b));return norm(a).filter(x=>have.has(x));};
+  const meOffers=norm(me.offers),meNeeds=norm(me.needs);
+  const meTopics=[...new Set([...meOffers,...meNeeds])];
   return state.people.map(p=>{
-    const offerNeed=(p.offers||[]).filter(x=>me.needs.includes(x));
-    const needOffer=me.offers.filter(x=>(p.needs||[]).includes(x));
-    const shared=unique([...(p.offers||[]),...(p.needs||[])].filter(x=>[...me.offers,...me.needs].includes(x)));
-    const style=(p.meetingStyles||[]).filter(x=>me.meetingStyles.includes(x));
-    const avail=(p.availability||[]).filter(x=>me.availability.includes(x));
-    const opennessBonus=(me.openness.includes('פתוח/ה לפניות')||(p.openness||[]).includes('פתוח/ה לפניות'))?6:0;
-    let score=Math.min(98,28+offerNeed.length*18+needOffer.length*16+shared.length*5+style.length*5+avail.length*4+opennessBonus);
-    if(!me.name&&!me.bio) score=Math.max(45,score-18);
+    const offerNeed=overlap(p.offers,meNeeds);
+    const needOffer=overlap(meOffers,p.needs);
+    const shared=overlap([...(p.offers||[]),...(p.needs||[])],meTopics);
+    const style=overlap(p.meetingStyles,me.meetingStyles);
+    const avail=overlap(p.availability,me.availability);
+    const openness=norm(me.openness).includes('open to anyone in the community')||norm(p.openness).includes('open to anyone in the community');
+    const useful=offerNeed.length>0||needOffer.length>0;
+    let score=Math.min(98,(useful?18:4)+offerNeed.length*20+needOffer.length*18+shared.length*2+style.length*4+avail.length*3+(openness?3:0));
+    if(!useful)score=Math.min(score,18);
     const reasons=[];
-    if(offerNeed.length) reasons.push(`${p.name} מביא/ה ${offerNeed.slice(0,3).join(', ')} — בדיוק משהו שסימנת שאת/ה מחפש/ת.`);
-    if(needOffer.length) reasons.push(`יש לך יכולת לעזור ל-${p.name} ב-${needOffer.slice(0,3).join(', ')}.`);
-    if(shared.length) reasons.push(`יש לכם שפה משותפת סביב ${shared.slice(0,3).join(', ')}.`);
-    if(style.length) reasons.push(`שניכם פתוחים לסוג מפגש דומה: ${style.slice(0,2).join(', ')}.`);
-    if(avail.length) reasons.push(`יש חפיפה בזמינות: ${avail.slice(0,3).join(', ')}.`);
-    const matchType=offerNeed.length&&needOffer.length?'התאמה הדדית':offerNeed.length?'אפשר ללמוד ממנו/ה':needOffer.length?'אפשר לעזור לו/ה':'שיחה קהילתית מעניינת';
-    return {...p,score,matchType,reasons:reasons.length?reasons:['יש כאן פוטנציאל לשיחת היכרות קהילתית קצרה.']};
-  }).sort((a,b)=>b.score-a.score);
+    if(offerNeed.length)reasons.push(`${p.name||'This member'} offers ${offerNeed.slice(0,3).join(', ')}, which you are looking for.`);
+    if(needOffer.length)reasons.push(`You can help ${p.name||'this member'} with ${needOffer.slice(0,3).join(', ')}.`);
+    if(style.length)reasons.push(`You both enjoy a similar session format: ${style.slice(0,2).join(', ')}.`);
+    if(avail.length)reasons.push(`You have overlapping availability: ${avail.slice(0,2).join(', ')}.`);
+    const matchType=offerNeed.length&&needOffer.length?'Mutual match':offerNeed.length?'Learn from them':needOffer.length?'Help them':'Explore profile';
+    return {...p,score,matchType,reasons:reasons.length?reasons:['Not enough complementary skills or needs yet.']};
+  }).sort((a,b)=>b.score-a.score||String(a.name||a.id||'').localeCompare(String(b.name||b.id||'')));
 }
 
 async function saveConnection(p){
@@ -227,13 +239,18 @@ async function saveConnection(p){
 }
 
 function renderMatches(){
-  const list=$('matchList'); if(!list) return; list.innerHTML='';
+  const list=$('matchesList'); if(!list)return;
+  list.innerHTML='';
   const matches=calcMatches();
-  if(!matches.length){ list.innerHTML='<div class="empty">עדיין אין מספיק פרופילים בקהילה. מלא/י פרופיל ולחץ/י שמירה כדי להוסיף אותו למאגר.</div>'; return; }
+  if($('matchCount'))$('matchCount').textContent=String(matches.filter(p=>p.score>18).length);
+  if(!matches.length){list.innerHTML='<div class="empty">No other profiles yet. Invite community members to join.</div>';return;}
   matches.forEach(p=>{
-    const c=document.createElement('div'); c.className='card match-card';
-    const photoStyle=p.photo?`style="background-image:url(${p.photo})"`:'';
-    c.innerHTML=`<div class="score">${p.score}%</div><div><div class="person-top"><div class="mini-avatar" ${photoStyle}>${p.photo?'':initials(p.name)}</div><div><p class="eyebrow">${p.matchType}</p><h3>${p.name}</h3><p class="meta">${p.title||''}</p></div></div><p class="meta">${p.bio||''}</p><div class="tags">${unique([...(p.offers||[]),...(p.needs||[]),...(p.meetingStyles||[])]).slice(0,7).map(t=>`<span class="tag">${t}</span>`).join('')}</div><div class="match-explain"><strong>למה כדאי להיפגש?</strong><br>${p.reasons.join('<br>')}</div></div><div class="stack"><button class="primary invite-btn">הזמן/י לפגישה</button><button class="ghost save-btn">Save for later</button></div>`;
+    const c=document.createElement('div');
+    c.className='card match-card';
+    const tags=unique([...(p.offers||[]),...(p.needs||[]),...(p.meetingStyles||[])]).slice(0,7);
+    c.innerHTML=`<div class="score">${p.score}%</div><div><div class="person-top"><div class="mini-avatar">${escapeHtml(initials(p.name))}</div><div><p class="eyebrow">${escapeHtml(p.matchType)}</p><h3>${escapeHtml(p.name)}</h3><p class="meta">${escapeHtml(p.title)}</p></div></div><p class="meta">${escapeHtml(p.bio)}</p><div class="tags">${tags.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div><div class="match-explain"><strong>Why connect?</strong><br>${p.reasons.map(escapeHtml).join('<br>')}</div></div><div class="stack"><button class="primary invite-btn">Invite to practice</button><button class="ghost save-btn">Save for later</button></div>`;
+    const avatar=c.querySelector('.mini-avatar');
+    if(avatar && typeof p.photo==='string' && /^https:\/\//i.test(p.photo)) avatar.style.backgroundImage=`url("${encodeURI(p.photo).replace(/["'()]/g,'')}")`;
     c.querySelector('.invite-btn').onclick=()=>openInvite(p);
     c.querySelector('.save-btn').onclick=()=>saveConnection(p);
     list.appendChild(c);
@@ -278,7 +295,7 @@ function allProfiles(){ return [profileAsPerson(),...state.people].filter(p=>p.n
 function countBy(key){ return allProfiles().flatMap(p=>p[key]||[]).reduce((a,t)=>(a[t]=(a[t]||0)+1,a),{}); }
 function sortedCounts(obj){ return Object.entries(obj).sort((a,b)=>b[1]-a[1]); }
 function renderRooms(){
-  const grid=$('roomsGrid'); if(!grid) return;
+  const grid=$('roomsList'); if(!grid) return;
   const needs=sortedCounts(countBy('needs')); const offers=countBy('offers');
   const rooms=needs.slice(0,6).map(([need,count])=>({title:`חדר Spark Match: ${need}`,count,reason:offers[need]?`יש ${count} מבקשים/ות ו-${offers[need]} שיכולים/ות לעזור.`:`יש ביקוש, אבל לא זוהו עדיין מספיק אנשים שמציעים את זה.`}));
   if(!rooms.length){ grid.innerHTML='<div class="empty">כשהקהילה תמלא פרופילים, נציע כאן חדרים לפתיחה בספארקו.</div>'; return; }
@@ -298,31 +315,40 @@ function renderInvites(){
 function kpis(){ const profiles=allProfiles(); return [['פרופילים',profiles.length],['פתוחים לפניות',profiles.filter(p=>(p.openness||[]).includes('פתוח/ה לפניות')).length],['הזמנות',state.invites.length],['נשמרו לי',state.savedConnections.length]]; }
 function reportRows(title,entries,max){ if(!entries.length) return `<div class="empty">אין עדיין מספיק נתונים עבור ${title}</div>`; return `<div class="report-list">${entries.map(([k,v])=>`<div class="report-row"><div><strong>${k}</strong><div class="bar"><span style="width:${Math.max(7,Math.round(v/max*100))}%"></span></div></div><strong>${v}</strong></div>`).join('')}</div>`; }
 function renderAdmin(){
-  if(!$('kpiGrid')) return;
-  $('kpiGrid').innerHTML=kpis().map(([label,value])=>`<div class="kpi"><strong>${value}</strong><span>${label}</span></div>`).join('');
-  const needs=sortedCounts(countBy('needs')); const offers=sortedCounts(countBy('offers'));
-  const needMap=countBy('needs'); const offerMap=countBy('offers');
-  const gaps=Object.entries(needMap).map(([k,v])=>[k,v-(offerMap[k]||0)]).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  const people=allProfiles().map(p=>[p.name||'ללא שם',(p.offers||[]).length*2+(p.needs||[]).length+(p.braindateOffer?3:0)]).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  let html='';
-  if(state.activeReport==='overview') html=`<div class="insight"><strong>מה הקהילה צריכה עכשיו:</strong><br>${needs.slice(0,5).map(([k,v])=>`${k} (${v})`).join(' · ')||'אין עדיין נתונים'}</div><div class="insight"><strong>מה הקהילה יודעת לתת:</strong><br>${offers.slice(0,5).map(([k,v])=>`${k} (${v})`).join(' · ')||'אין עדיין נתונים'}</div><div class="insight"><strong>המלצה:</strong><br>כשיש 4+ אנשים סביב אותו צורך, כדאי לפתוח חדר Spark Match קבוצתי בספארקו.</div>`;
-  if(state.activeReport==='needs') html=reportRows('צרכים',needs.slice(0,12),needs[0]?.[1]||1);
-  if(state.activeReport==='offers') html=reportRows('יכולות',offers.slice(0,12),offers[0]?.[1]||1);
-  if(state.activeReport==='gaps') html=reportRows('פערים',gaps.slice(0,12),gaps[0]?.[1]||1);
-  if(state.activeReport==='people') html=reportRows('אנשים מרכזיים',people,people[0]?.[1]||1);
-  $('adminReport').innerHTML=html;
+  const el=$('adminReport'); if(!el)return;
+  const needs=sortedCounts(countBy('needs')), offers=sortedCounts(countBy('offers'));
+  const offered=countBy('offers'), needMap=countBy('needs');
+  const gaps=Object.entries(needMap).map(([k,v])=>[k,Math.max(0,v-(offered[k]||0))]).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const kind=state.activeReport;
+  if(kind==='offers')el.innerHTML=reportRows('strengths',offers.slice(0,12),offers[0]?.[1]||1);
+  else if(kind==='gaps')el.innerHTML=reportRows('opportunity gaps',gaps.slice(0,12),gaps[0]?.[1]||1);
+  else el.innerHTML=reportRows('needs',needs.slice(0,12),needs[0]?.[1]||1);
 }
 
 function render(){ syncForm(); renderChips(); updatePreview(); renderMatches(); renderSaved(); renderPeople(); renderRooms(); renderInvites(); renderAdmin(); saveLocal(); }
 function closeInvite(){ const dlg=$('inviteDialog'); if(dlg&&dlg.open) dlg.close(); }
 function openInvite(p){
   selectedInvitePerson=p;
-  $('inviteTitle').textContent=`הזמנה ל-${p.name}`;
-  $('inviteReason').innerHTML=`<strong>${p.score}% התאמה · ${p.matchType}</strong><br>${p.reasons.join('<br>')}`;
-  $('inviteMessage').value=`היי ${p.name},\nראיתי שהמערכת הציעה בינינו חיבור רלוונטי.\n${p.reasons[0]}\nאשמח לשיחת Spark Match קצרה של 25 דקות.`;
-  $('inviteTimes').value='ראשון 10:00\nשלישי 17:30\nחמישי 20:00';
-  const dlg=$('inviteDialog'); dlg.showModal?dlg.showModal():dlg.setAttribute('open','open');
+  const nav=document.querySelector('[data-view="invites"]');
+  if(nav)nav.click();
+  if($('inviteTitle'))$('inviteTitle').value=`Practice with ${p.name||'a member'}`;
+  if($('inviteMessage'))$('inviteMessage').value=`Hi ${p.name||'there'},\nSpark Match suggested we connect.\n${(p.reasons||[])[0]||'Would you like to practice together?'}\nCould we meet for a 25-minute session?`;
+  if($('inviteTimes'))$('inviteTimes').value='';
 }
+async function submitInvite(){
+  if(!selectedInvitePerson?.id||!state.communityId||!supabaseClient){alert('Select a saved community member while connected to the cloud.');return;}
+  const title=$('inviteTitle')?.value.trim()||'Practice session';
+  const message=[title,$('inviteMessage')?.value.trim()].filter(Boolean).join('\n\n');
+  const proposed=($('inviteTimes')?.value||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
+  if(!message.trim()){alert('Add a short invitation message.');return;}
+  const payload={community_id:state.communityId,sender_key:state.userKey,receiver_profile_id:selectedInvitePerson.id,message,proposed_times:proposed,status:'pending'};
+  const {error}=await supabaseClient.from('invites').insert(payload);
+  if(error){console.error(error);alert('Invitation could not be saved.');return;}
+  selectedInvitePerson=null;
+  await refreshFromDb();
+  render();
+}
+
 function suggestBioText(){
   const existing=(state.me.bio||'').trim();
   if(existing&&existing.length<=120) return existing;
@@ -393,65 +419,35 @@ async function uploadProfilePhoto(file){
 }
 
 
-document.querySelectorAll('.nav-item').forEach(btn=>btn.onclick=()=>{ 
-function dataUrlToBlob(dataUrl){
-  const parts = dataUrl.split(',');
-  const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-  const binary = atob(parts[1]);
-  const bytes = new Uint8Array(binary.length);
-  for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
-  return new Blob([bytes], {type:mime});
-}
-
-function compressImageFile(file){
-  return new Promise((resolve, reject)=>{
-    const img = new Image();
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = ()=>{
-      img.onload = ()=>{
-        const max = 720;
-        const scale = Math.min(1, max / Math.max(img.width, img.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(blob=>resolve(blob), 'image/jpeg', 0.78);
-      };
-      img.onerror = reject;
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
+function installNav(){
+  document.querySelectorAll('.nav-item').forEach(btn=>btn.onclick=()=>{
+    document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    const target=$('view-'+btn.dataset.view);
+    if(target) target.classList.add('active');
   });
 }
+installNav();
 
-async function uploadProfilePhoto(file){
-  if(!supabaseClient){
-    alert('Supabase is not loaded. Photo upload is not available right now.');
-    return null;
-  }
-  setStatus('Uploading photo...', '');
-  const blob = await compressImageFile(file);
-  const path = `${state.userKey}/avatar-${Date.now()}.jpg`;
-  const { error } = await supabaseClient.storage
-    .from('profile-photos')
-    .upload(path, blob, { contentType:'image/jpeg', upsert:true });
-  if(error){
-    console.error(error);
-    setStatus('Photo upload error', 'error');
-    alert('Photo upload failed. Make sure you ran the Storage bucket SQL setup.');
-    return null;
-  }
-  const { data } = supabaseClient.storage.from('profile-photos').getPublicUrl(path);
-  setStatus('Photo uploaded', 'ok');
-  return data.publicUrl;
+
+document.querySelectorAll('[data-go]').forEach(btn=>btn.onclick=()=>document.querySelector(`[data-view="${btn.dataset.go}"]`)?.click());
+function installBindings(){
+  const keys=['name','title','bio','currentFocus','braindateOffer','idealMatch','availability','meetingStyle','openness','email','phone'];
+  keys.forEach(k=>{
+    if(!$(k))return;
+    $(k).addEventListener('input',e=>{
+      const value=e.target.value;
+      if(k==='meetingStyle')state.me.meetingStyles=value?[value]:[];
+      else if(k==='openness')state.me.openness=value?[value]:[];
+      else if(k==='availability')state.me.availability=value.split(',').map(x=>x.trim()).filter(Boolean);
+      else if(k==='idealMatch')state.me.lookingToMeet=value;
+      else state.me[k]=value;
+      render();
+    });
+  });
 }
-
-
-document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); $(btn.dataset.view+'View').classList.add('active'); $('viewTitle').textContent=btn.textContent; });
-document.querySelectorAll('[data-go]').forEach(btn=>btn.onclick=()=>document.querySelector(`[data-view="${btn.dataset.go}"]`).click());
-['name','title','bio','currentFocus','braindateOffer','lookingToMeet','link','location','email','phone'].forEach(k=>{ if($(k)) $(k).addEventListener('input',e=>{ state.me[k]=e.target.value; render(); }); });
+installBindings();
 if($('photoInput')) $('photoInput').addEventListener('change', async e=>{
   const file = e.target.files[0];
   if(!file) return;
@@ -477,13 +473,14 @@ if($('addNeed')) $('addNeed').onclick=()=>addCustomTag('customNeed','needs','nee
 if($('suggestBio')) $('suggestBio').onclick=()=>{ $('bioSuggestion').textContent=suggestBioText(); $('bioSuggestionBox').classList.remove('hidden'); };
 if($('useSuggestion')) $('useSuggestion').onclick=()=>{ state.me.bio=$('bioSuggestion').textContent; $('bioSuggestionBox').classList.add('hidden'); render(); };
 if($('dismissSuggestion')) $('dismissSuggestion').onclick=()=>$('bioSuggestionBox').classList.add('hidden');
-if($('copyBio')) $('copyBio').onclick=async()=>{ try{ await navigator.clipboard.writeText(state.me.bio||''); $('copyStatus').textContent='המשפט הועתק. אפשר להדביק בפרופיל Sparkco.'; }catch(e){ $('copyStatus').textContent='אפשר לסמן ולהעתיק ידנית מתוך תיבת הביו.'; } };
+if($('copyBio'))$('copyBio').onclick=async()=>{try{await navigator.clipboard.writeText(state.me.bio||'');$('copyBio').textContent='Copied!';}catch(e){$('copyBio').textContent='Select and copy your intro';}};
 if($('seedDemo')) $('seedDemo').onclick=async()=>{ alert('בגרסת Supabase אין צורך בטעינת דמו. מלא/י פרופיל ולחץ/י שמירה.'); };
 if($('addDemoPerson')) $('addDemoPerson').onclick=()=>alert('בגרסת Supabase מוסיפים אנשים דרך מילוי פרופילים אמיתי.');
 if($('refreshMatches')) $('refreshMatches').onclick=async()=>{ await refreshFromDb(); render(); };
 if($('saveAll')) $('saveAll').onclick=saveProfileToDb;
 
 if($('saveBottom')) $('saveBottom').onclick=saveProfileToDb;
+if($('createInvite'))$('createInvite').onclick=submitInvite;
 
 if($('exportData')) $('exportData').onclick=()=>{ const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='sparkco-braindates-data.json'; a.click(); URL.revokeObjectURL(a.href); };
 if($('saveAdmin')) $('saveAdmin').onclick=async()=>{ state.communityName=$('communityName').value; state.taxonomy.offers=$('adminOffers').value.split(',').map(x=>x.trim()).filter(Boolean); state.taxonomy.needs=$('adminNeeds').value.split(',').map(x=>x.trim()).filter(Boolean); if(supabaseClient && state.communityId){ await supabaseClient.from('community_taxonomy').upsert({community_id:state.communityId,offers:state.taxonomy.offers,needs:state.taxonomy.needs,meeting_styles:state.taxonomy.meetingStyles,openness:state.taxonomy.openness,availability:state.taxonomy.availability},{onConflict:'community_id'}); } render(); };
