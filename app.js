@@ -100,7 +100,7 @@ function uiProfileToDb(){
 }
 
 async function dbLoad(){
-  if(!supabaseClient){ setStatus('Supabase לא נטען', 'error'); return; }
+  if(!supabaseClient){ setStatus('Supabase is not loaded', 'error'); return; }
   setStatus('Connecting...', '');
   try{
     let { data: communities, error: commErr } = await supabaseClient.from('communities').select('*').eq('name','Spark Match Sales Coaching').order('created_at', { ascending:true }).limit(1);
