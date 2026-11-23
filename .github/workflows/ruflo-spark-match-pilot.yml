@@ -1,0 +1,68 @@
+name: Spark Match complex Ruflo pilot
+
+on:
+  push:
+    branches:
+      - experiment/ruflo-spark-match-20261123
+  pull_request:
+    branches:
+      - security/fix-sales-coaching-community-20261017
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  complex-app-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check production script syntax without executing against Supabase
+        run: node --check app.js
+      - name: Confirm previous code fails new integration acceptance tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show 'origin/security/fix-sales-coaching-community-20261017:app.js' > /tmp/spark-match-baseline.js
+          set +e
+          SPARK_MATCH_JS=/tmp/spark-match-baseline.js node --test tests/spark-match-contract.test.mjs > /tmp/spark-match-baseline.txt 2>&1
+          old_status=$?
+          set -e
+          tail -n 35 /tmp/spark-match-baseline.txt
+          if [[ "$old_status" -eq 0 ]]; then
+            echo "::error::Baseline unexpectedly passed new regression tests."
+            exit 1
+          fi
+          echo "Verified: baseline has actual failures the patch targets."
+      - name: Run complex-app matching and UI contract tests
+        run: node --test tests/*.test.mjs
+
+  ruflo-complex-repository-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Initialize and diagnose Ruflo against a copy of Spark Match
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/spark-match-ruflo"
+          cp app.js index.html styles.css README.md "$RUNNER_TEMP/spark-match-ruflo/"
+          cd "$RUNNER_TEMP/spark-match-ruflo"
+          printf '{"name":"spark-match-audit-only","private":true,"version":"0.0.0"}\n' > package.json
+          echo "External dependency version:"
+          npx --yes ruflo@3.80.1 --version
+          echo "Ruflo doctor / Node:"
+          npx --yes ruflo@3.80.1 doctor --json --component node
+          echo "Ruflo workspace init on the actual multi-file app:"
+          npx --yes ruflo@3.80.1 init
+          test -f CLAUDE.md
+          test -d .claude
+          echo "PASS: Ruflo initialized successfully against Spark Match source copy"
+          echo "LIMITATION: no LLM provider credential is supplied; no Ruflo AI agent completed code changes."
