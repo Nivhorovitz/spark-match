@@ -21,6 +21,7 @@ class Element {
     this.subElements = new Map();
   }
   appendChild(value) { this.children.push(value); }
+  querySelectorAll() { return []; }
   addEventListener(name, cb) { (this.listeners[name] ||= []).push(cb); }
   setAttribute() {}
   querySelector(selector) {
@@ -30,7 +31,7 @@ class Element {
   click() { if (this.onclick) this.onclick({target:this}); for (const cb of this.listeners.click||[]) cb({target:this}); }
   input(value) { this.value=value; for (const cb of this.listeners.input||[]) cb({target:this}); }
 }
-function mount() {
+function mount(overrides = {}) {
   const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);
   const elements = new Map(ids.map(x=>[x,new Element(x)]));
   const nav = [...html.matchAll(/<button class="nav-item[^"]*" data-view="([^"]+)"/g)]
@@ -59,7 +60,7 @@ function mount() {
     taxonomy:{offers:['Discovery calls','Objection handling'],needs:['Discovery calls','Objection handling'],meetingStyles:[],openness:[],availability:[]},
     me:{name:'Alex',title:'Founder',bio:'I practice consultative selling',photo:'',offers:['Discovery calls'],needs:['Objection handling'],availability:['Tuesday'],meetingStyles:['30-minute role-play'],openness:[],currentFocus:'Improve pipeline',braindateOffer:'Practice',lookingToMeet:'',email:'',phone:''},
     people:[{id:'profile-2',user_key:'mock-peer',name:'Jordan',title:'Coach',bio:'Sales mentor',offers:['Objection handling'],needs:['Discovery calls'],availability:['Tuesday'],meetingStyles:['30-minute role-play'],openness:[]}],
-    savedConnections:[],invites:[],activeReport:'needs',online:false
+    savedConnections:[],invites:[],activeReport:'needs',online:false, ...overrides
   };
   const storage=new Map([['sparkMatchSalesV1',JSON.stringify(state)]]);
   const localStorage={
@@ -103,4 +104,23 @@ test('dashboard renders the reporting tabs already present in the page',()=>{
   const offersTab=app.tabs.find(x=>x.dataset.report==='offers');
   offersTab.click();
   assert.match(app.lookup('adminReport').innerHTML,/Discovery calls/);
+});
+
+test('saved profiles, invitations, reports and room suggestions escape untrusted member content',()=>{
+  const injection = '<img src=x onerror=alert(1)>';
+  const app=mount({
+    savedConnections:[{id:'s1',status:'saved',match_reason:injection,private_note:injection,
+      saved_profile:{name:injection,title:injection,bio:injection}}],
+    invites:[{status:'pending',message:injection,proposed_times:[injection],
+      receiver_profile:{name:injection}}],
+    people:[{id:'evil-peer',user_key:'other',name:injection,title:injection,bio:injection,
+      offers:[injection],needs:[injection],meetingStyles:[],availability:[],openness:[]}]
+  });
+  assert.ok(app.lookup('savedList').children[0].innerHTML.includes('&lt;img'));
+  assert.ok(!app.lookup('savedList').children[0].innerHTML.includes(injection));
+  assert.ok(app.lookup('invitesList').children[0].innerHTML.includes('&lt;img'));
+  assert.ok(!app.lookup('invitesList').children[0].innerHTML.includes(injection));
+  assert.ok(!app.lookup('roomsList').innerHTML.includes(injection));
+  app.tabs.find(t=>t.dataset.report==='needs').click();
+  assert.ok(!app.lookup('adminReport').innerHTML.includes(injection));
 });
