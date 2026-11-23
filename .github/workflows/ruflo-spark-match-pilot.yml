@@ -1,13 +1,14 @@
 name: Spark Match complex Ruflo pilot
 
 on:
-  push:
-    branches:
-      - experiment/ruflo-spark-match-20261123
   pull_request:
     branches:
       - security/fix-sales-coaching-community-20261017
   workflow_dispatch:
+
+concurrency:
+  group: spark-match-ruflo-pilot-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
