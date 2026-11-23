@@ -258,62 +258,74 @@ function renderMatches(){
 }
 
 function renderSaved(){
-  const box=$('savedList'); if(!box) return; box.innerHTML='';
-  if(!state.savedConnections.length){ box.innerHTML='<div class="empty">עדיין אין חיבורים שמורים. במסך ההתאמות אפשר ללחוץ “Save for later”.</div>'; return; }
+  const box=$('savedList');if(!box)return;
+  box.innerHTML='';
+  if(!state.savedConnections.length){box.innerHTML='<div class="empty">No saved connections yet. Save someone from your matches.</div>';return;}
   state.savedConnections.forEach(item=>{
     const p=item.saved_profile?dbProfileToPerson(item.saved_profile):{};
-    const card=document.createElement('div'); card.className='card';
-    card.innerHTML=`<p class="eyebrow">Saved Connection · ${item.status||'saved'}</p><h3>${p.name||'ללא שם'}</h3><p class="meta">${p.title||''}<br>${p.bio||''}</p><div class="match-explain">${item.match_reason||'נשמר להמשך.'}</div><div class="note-box"><label>הערה אישית אחרי פגישה או לפני המשך<textarea data-note="${item.id}" placeholder="לדוגמה: דיברנו על תמחור. כדאי לחזור אליה אחרי שאנסח הצעה.">${item.private_note||''}</textarea></label><div class="small-actions"><button class="secondary" data-save-note="${item.id}">שמור הערה</button><button class="ghost" data-status="${item.id}" data-value="met">סמן שנפגשנו</button><button class="ghost" data-status="${item.id}" data-value="follow_up">צריך המשך</button><button class="ghost" data-status="${item.id}" data-value="archived">ארכוב</button></div></div>`;
+    const card=document.createElement('div');card.className='card';
+    card.innerHTML=`<p class="eyebrow">Saved connection · ${escapeHtml(item.status||'saved')}</p><h3>${escapeHtml(p.name||'Unnamed member')}</h3><p class="meta">${escapeHtml(p.title)}<br>${escapeHtml(p.bio)}</p><div class="match-explain">${escapeHtml(item.match_reason||'Saved for follow-up.')}</div><div class="note-box"><label>Private meeting notes<textarea data-note="${escapeHtml(item.id)}" placeholder="What should I remember for the next conversation?">${escapeHtml(item.private_note||'')}</textarea></label><div class="small-actions"><button class="secondary" data-save-note="${escapeHtml(item.id)}">Save note</button><button class="ghost" data-status="${escapeHtml(item.id)}" data-value="met">Met</button><button class="ghost" data-status="${escapeHtml(item.id)}" data-value="follow_up">Follow up</button><button class="ghost" data-status="${escapeHtml(item.id)}" data-value="archived">Archive</button></div></div>`;
     box.appendChild(card);
   });
   box.querySelectorAll('[data-save-note]').forEach(btn=>btn.onclick=async()=>{
     const id=btn.dataset.saveNote;
     const note=box.querySelector(`[data-note="${id}"]`).value;
-    const {error}=await supabaseClient.from('saved_connections').update({private_note:note}).eq('id',id);
-    if(error) alert('שמירת הערה נכשלה');
-    await refreshFromDb(); render();
+    const {error}=await supabaseClient.from('saved_connections').update({private_note:note}).eq('id',id).eq('user_key',state.userKey).eq('community_id',state.communityId);
+    if(error){alert('Could not save note.');return;}
+    await refreshFromDb();render();
   });
   box.querySelectorAll('[data-status]').forEach(btn=>btn.onclick=async()=>{
-    const {error}=await supabaseClient.from('saved_connections').update({status:btn.dataset.value}).eq('id',btn.dataset.status);
-    if(error) alert('עדכון סטטוס נכשל');
-    await refreshFromDb(); render();
+    const {error}=await supabaseClient.from('saved_connections').update({status:btn.dataset.value}).eq('id',btn.dataset.status).eq('user_key',state.userKey).eq('community_id',state.communityId);
+    if(error){alert('Could not update status.');return;}
+    await refreshFromDb();render();
   });
 }
 
 function renderPeople(){
-  const grid=$('peopleGrid'); if(!grid) return; grid.innerHTML='';
+  const grid=$('peopleGrid');if(!grid)return;
+  grid.innerHTML='';
   const people=[profileAsPerson(),...state.people].filter(p=>p.name||p.bio||(p.offers||[]).length||(p.needs||[]).length);
-  if(!people.length){ grid.innerHTML='<div class="empty">מפת האנשים תתמלא אחרי שחברי הקהילה ימלאו פרופיל.</div>'; return; }
+  if(!people.length){grid.innerHTML='<div class="empty">Profiles appear here as members join.</div>';return;}
   people.forEach(p=>{
-    const c=document.createElement('div'); c.className='card person-card';
-    const photoStyle=p.photo?`style="background-image:url(${p.photo})"`:'';
-    c.innerHTML=`<div class="person-top"><div class="mini-avatar" ${photoStyle}>${p.photo?'':initials(p.name)}</div><div><h3>${p.name||'ללא שם'}</h3><p class="meta">${p.title||''}</p></div></div><p class="meta">${p.bio||''}</p>${p.currentFocus?`<div class="match-explain"><strong>מעניין אותי עכשיו:</strong><br>${p.currentFocus}</div>`:''}${p.braindateOffer?`<p class="meta"><strong>מציע/ה Spark Match:</strong> ${p.braindateOffer}</p>`:''}<div class="tags">${(p.offers||[]).slice(0,5).map(t=>`<span class="tag">נותן/ת: ${t}</span>`).join('')}${(p.needs||[]).slice(0,5).map(t=>`<span class="tag">מבקש/ת: ${t}</span>`).join('')}</div>`;
+    const c=document.createElement('div');c.className='card person-card';
+    const tags=[...(p.offers||[]).slice(0,5).map(t=>'Offers: '+t),...(p.needs||[]).slice(0,5).map(t=>'Needs: '+t)];
+    c.innerHTML=`<div class="person-top"><div class="mini-avatar">${escapeHtml(initials(p.name))}</div><div><h3>${escapeHtml(p.name||'Unnamed member')}</h3><p class="meta">${escapeHtml(p.title)}</p></div></div><p class="meta">${escapeHtml(p.bio)}</p>${p.currentFocus?`<div class="match-explain"><strong>Current focus:</strong><br>${escapeHtml(p.currentFocus)}</div>`:''}${p.braindateOffer?`<p class="meta"><strong>Can host:</strong> ${escapeHtml(p.braindateOffer)}</p>`:''}<div class="tags">${tags.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>`;
+    const avatar=c.querySelector('.mini-avatar');
+    if(avatar&&typeof p.photo==='string'&&/^https:\/\//i.test(p.photo))avatar.style.backgroundImage=`url("${encodeURI(p.photo).replace(/["'()]/g,'')}")`;
     grid.appendChild(c);
   });
 }
+
 function allProfiles(){ return [profileAsPerson(),...state.people].filter(p=>p.name||p.bio||(p.offers||[]).length||(p.needs||[]).length); }
 function countBy(key){ return allProfiles().flatMap(p=>p[key]||[]).reduce((a,t)=>(a[t]=(a[t]||0)+1,a),{}); }
 function sortedCounts(obj){ return Object.entries(obj).sort((a,b)=>b[1]-a[1]); }
 function renderRooms(){
-  const grid=$('roomsList'); if(!grid) return;
-  const needs=sortedCounts(countBy('needs')); const offers=countBy('offers');
-  const rooms=needs.slice(0,6).map(([need,count])=>({title:`חדר Spark Match: ${need}`,count,reason:offers[need]?`יש ${count} מבקשים/ות ו-${offers[need]} שיכולים/ות לעזור.`:`יש ביקוש, אבל לא זוהו עדיין מספיק אנשים שמציעים את זה.`}));
-  if(!rooms.length){ grid.innerHTML='<div class="empty">כשהקהילה תמלא פרופילים, נציע כאן חדרים לפתיחה בספארקו.</div>'; return; }
-  grid.innerHTML=rooms.map(r=>`<div class="card room-card"><p class="eyebrow">Suggested Sparkco Room</p><h3>${r.title}</h3><div class="room-count">${r.count}</div><p class="meta">${r.reason}</p><button class="ghost">פתחו חדר כזה השבוע</button></div>`).join('');
+  const grid=$('roomsList');if(!grid)return;
+  const needs=sortedCounts(countBy('needs')),offers=countBy('offers');
+  const rooms=needs.slice(0,6).map(([need,count])=>({title:`Practice room: ${need}`,count,reason:offers[need]?`${count} members want help and ${offers[need]} offer it.`:'Demand exists; look for more people who can help.'}));
+  if(!rooms.length){grid.innerHTML='<div class="empty">Rooms will be suggested as the community grows.</div>';return;}
+  grid.innerHTML=rooms.map(r=>`<div class="card room-card"><p class="eyebrow">Suggested Sparkco Room</p><h3>${escapeHtml(r.title)}</h3><div class="room-count">${r.count}</div><p class="meta">${escapeHtml(r.reason)}</p></div>`).join('');
 }
+
 function renderInvites(){
-  const box=$('invitesList'); if(!box) return; box.innerHTML='';
-  if(!state.invites.length){ box.innerHTML='<div class="empty">עדיין לא נשלחו הזמנות. מתוך מסך ההתאמות אפשר לשלוח הזמנה עם מועדים מוצעים.</div>'; return; }
+  const box=$('invitesList');if(!box)return;
+  box.innerHTML='';
+  if(!state.invites.length){box.innerHTML='<div class="empty">No invitations sent yet. Invite someone from your matches.</div>';return;}
   state.invites.forEach(inv=>{
     const p=inv.receiver_profile?dbProfileToPerson(inv.receiver_profile):{};
-    const c=document.createElement('div'); c.className='card invite-card';
-    const status=inv.status||'pending'; const statusLabel=status==='accepted'?'אושרה':status==='declined'?'נדחתה':'ממתינה';
-    c.innerHTML=`<p class="eyebrow">Spark Match Invite</p><h3>${p.name||'הזמנה'}</h3><span class="status ${status}">${statusLabel}</span><p class="meta">${inv.message||''}</p><div class="tags">${(inv.proposed_times||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>`;
+    const c=document.createElement('div');c.className='card invite-card';
+    const status=['pending','accepted','declined'].includes(inv.status)?inv.status:'pending';
+    c.innerHTML=`<p class="eyebrow">Spark Match Invite</p><h3>${escapeHtml(p.name||'Invitation')}</h3><span class="status ${status}">${status==='accepted'?'Accepted':status==='declined'?'Declined':'Pending'}</span><p class="meta">${escapeHtml(inv.message)}</p><div class="tags">${(inv.proposed_times||[]).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>`;
     box.appendChild(c);
   });
 }
+
 function kpis(){ const profiles=allProfiles(); return [['פרופילים',profiles.length],['פתוחים לפניות',profiles.filter(p=>(p.openness||[]).includes('פתוח/ה לפניות')).length],['הזמנות',state.invites.length],['נשמרו לי',state.savedConnections.length]]; }
-function reportRows(title,entries,max){ if(!entries.length) return `<div class="empty">אין עדיין מספיק נתונים עבור ${title}</div>`; return `<div class="report-list">${entries.map(([k,v])=>`<div class="report-row"><div><strong>${k}</strong><div class="bar"><span style="width:${Math.max(7,Math.round(v/max*100))}%"></span></div></div><strong>${v}</strong></div>`).join('')}</div>`; }
+function reportRows(title,entries,max){
+  if(!entries.length)return `<div class="empty">Not enough data for ${escapeHtml(title)} yet.</div>`;
+  return `<div class="report-list">${entries.map(([k,v])=>`<div class="report-row"><div><strong>${escapeHtml(k)}</strong><div class="bar"><span style="width:${Math.max(7,Math.round(Number(v)/max*100))}%"></span></div></div><strong>${Number(v)||0}</strong></div>`).join('')}</div>`;
+}
+
 function renderAdmin(){
   const el=$('adminReport'); if(!el)return;
   const needs=sortedCounts(countBy('needs')), offers=sortedCounts(countBy('offers'));
