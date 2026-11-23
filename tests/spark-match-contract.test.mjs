@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const app = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
+const app = fs.readFileSync(process.env.SPARK_MATCH_JS || new URL('../app.js', import.meta.url), 'utf8');
 
 function sourceBetween(start, end) {
   const a = app.indexOf(start);
@@ -36,7 +36,8 @@ function engine(state, render = false) {
     },
     $: id => id === 'matchesList' ? list : null,
     openInvite() {}, saveConnection() {},
-    unique: arr => [...new Set((arr || []).filter(Boolean))]
+    unique: arr => [...new Set((arr || []).filter(Boolean))],
+    initials: name => String(name||'?').split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('')||'?'
   };
   const source = "function escapeHtml(value) { return String(value ?? '').replace(/[&<>\"']/g, ch => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', \"'\":'&#39;'}[ch])); }\n" +
     matchingSource + '\n' + (render ? renderSource : '');
@@ -55,7 +56,7 @@ test('public HTML and controller agree on the primary user journey', () => {
   for (const view of ['profile','matches','saved','invites','rooms','admin']) {
     assert.match(html, new RegExp('id="view-' + view + '"'));
   }
-  assert.match(app, /'view-'\\s*\\+\\s*btn\.dataset\.view/);
+  assert.match(app, /'view-'\s*\+\s*btn\.dataset\.view/);
 });
 
 test('reciprocal, single-sided and unrelated candidates rank by evidence', () => {
